@@ -43,6 +43,11 @@ function createMockDb() {
           const email = String(query?.email || "").toLowerCase()
           return users.find((u) => u.email === email) || null
         },
+        insertOne: async (doc: any) => {
+          const id = `mock-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`
+          users.push({ _id: id, ...doc })
+          return { insertedId: id }
+        },
         updateOne: async (filter: any, update: any) => {
           const id = filter?._id
           const user = users.find((u) => u._id === id)
