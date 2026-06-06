@@ -39,7 +39,7 @@ if groq_api_key:
 def detect_language(text):
     """
     Detect the language of the input text based on script and common words.
-    Returns: 'hi' (Hindi), 'kn' (Kannada), 'ta' (Tamil), 'te' (Telugu), 'mr' (Marathi), or 'en' (English)
+    Returns: 'hi' (Hindi), 'kn' (Kannada), 'ta' (Tamil), 'te' (Telugu), 'ml' (Malayalam), 'mr' (Marathi), or 'en' (English)
     """
     if re.search(r'[\u0900-\u097F]', text):  # Devanagari script
         # Check for Hindi vs Marathi
@@ -53,6 +53,8 @@ def detect_language(text):
         return 'ta'
     elif re.search(r'[\u0C00-\u0C7F]', text):  # Telugu script
         return 'te'
+    elif re.search(r'[\u0D00-\u0D7F]', text):  # Malayalam script
+        return 'ml'
     return 'en'
 
 
@@ -66,6 +68,7 @@ def get_language_instruction(lang_code):
         'kn': "Reply in Kannada using Kannada script. Keep the language natural and easy to understand.",
         'ta': "Reply in Tamil using Tamil script. Keep the language natural and easy to understand.",
         'te': "Reply in Telugu using Telugu script. Keep the language natural and easy to understand.",
+        'ml': "Reply in Malayalam using Malayalam script. Keep the language natural and easy to understand.",
         'mr': "Reply in Marathi using Devanagari script. Keep the language natural and easy to understand."
     }
     return instructions.get(lang_code, instructions['en'])
@@ -196,6 +199,7 @@ def get_supported_languages():
             {"code": "kn", "name": "ಕನ್ನಡ", "flag": "🇮🇳"},
             {"code": "ta", "name": "தமிழ்", "flag": "🇮🇳"},
             {"code": "te", "name": "తెలుగు", "flag": "🇮🇳"},
+            {"code": "ml", "name": "മലയാളം", "flag": "🇮🇳"},
             {"code": "mr", "name": "मराठी", "flag": "🇮🇳"}
         ]
     })
@@ -213,7 +217,7 @@ if __name__ == "__main__":
     else:
         print("\n✅ Server configured and ready!")
         print(f"   LLM Model: llama-3.3-70b-versatile")
-        print(f"   Languages: English, Hindi, Kannada, Tamil, Telugu, Marathi\n")
+        print(f"   Languages: English, Hindi, Kannada, Tamil, Telugu, Malayalam, Marathi\n")
     
     print("🚀 Starting server on http://localhost:5000")
     print("="*60 + "\n")

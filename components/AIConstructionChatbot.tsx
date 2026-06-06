@@ -37,14 +37,23 @@ interface Message {
 export default function AIConstructionChatbot() {
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
+  const welcomeMessages: Record<string, string> = {
+    en: "Hello! I'm your AI Construction Assistant. I can help you with cost estimates, design ideas, materials, contractors, vastu guidance, and finding local vendors. How can I assist you today?",
+    hi: "नमस्ते! मैं आपका AI निर्माण सहायक हूं। मैं लागत अनुमान, डिज़ाइन विचार, सामग्री, ठेकेदार, वास्तु मार्गदर्शन और स्थानीय विक्रेताओं को खोजने में मदद कर सकता हूं। आज मैं आपकी कैसे मदद कर सकता हूं?",
+    kn: "ನಮಸ್ಕಾರ! ನಾನು ನಿಮ್ಮ AI ನಿರ್ಮಾಣ ಸಹಾಯಕ. ವೆಚ್ಚದ ಅಂದಾಜುಗಳು, ವಿನ್ಯಾಸ ಆಲೋಚನೆಗಳು, ವಸ್ತುಗಳು, ಗುತ್ತಿಗೆದಾರರು, ವಾಸ್ತು ಮಾರ್ಗದರ್ಶನ ಮತ್ತು ಸ್ಥಳೀಯ ಮಾರಾಟಗಾರರನ್ನು ಹುಡುಕುವಲ್ಲಿ ನಾನು ಸಹಾಯ ಮಾಡಬಲ್ಲೆ. ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?",
+    ta: "வணக்கம்! நான் உங்கள் AI கட்டுமான உதவியாளர். செலவு மதிப்பீடுகள், வடிவமைப்பு யோசனைகள், பொருட்கள், ஒப்பந்ததாரர்கள், வாஸ்து வழிகாட்டுதல் மற்றும் உள்ளூர் விற்பனையாளர்களைக் கண்டறிய உதவ முடியும். இன்று நான் உங்களுக்கு எப்படி உதவ முடியும்?",
+    te: "నమస్కారం! నేను మీ AI నిర్మాణ సహాయకుడిని. ఖర్చు అంచనాలు, డిజైన్ ఆలోచనలు, మెటీరియల్స్, కాంట్రాక్టర్లు, వాస్తు మార్గదర్శనం మరియు స్థానిక విక్రేతలను కనుగొనడంలో సహాయపడగలను. నేను మీకు ఎలా సహాయపడగలను?",
+    ml: "നമസ്കാരം! ഞാൻ നിങ്ങളുടെ AI നിർമ്മാണ സഹായിയാണ്. ചെലവ് കണക്കുകൾ, ഡിസൈൻ ആശയങ്ങൾ, മെറ്റീരിയലുകൾ, കോൺട്രാക്ടർമാർ, വാസ്തു മാർഗ്ഗനിർദ്ദേശം, പ്രാദേശിക വിൽപ്പനക്കാർ എന്നിവ കണ്ടെത്താൻ എനിക്ക് സഹായിക്കാനാകും. ഇന്ന് എനിക്ക് നിങ്ങളെ എങ്ങനെ സഹായിക്കാനാകും?",
+    mr: "नमस्कार! मी तुमचा AI बांधकाम सहाय्यक आहे. खर्चाचा अंदाज, डिझाइन कल्पना, साहित्य, कंत्राटदार, वास्तु मार्गदर्शन आणि स्थानिक विक्रेते शोधण्यात मी मदत करू शकतो. आज मी तुमची कशी मदत करू शकतो?",
+  }
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
       type: "ai",
-      content:
-        "नमस्ते! मैं आपका AI निर्माण सहायक हूं। मैं आपकी घर निर्माण यात्रा में मदद कर सकता हूं। आप मुझसे हिंदी, अंग्रेजी या कन्नड़ में बात कर सकते हैं।",
+      content: welcomeMessages.en,
       timestamp: new Date(),
-      language: "hi",
+      language: "en",
     },
   ])
   const [inputMessage, setInputMessage] = useState("")
@@ -67,6 +76,7 @@ export default function AIConstructionChatbot() {
     { code: "kn", name: "ಕನ್ನಡ", flag: "🇮🇳" },
     { code: "ta", name: "தமிழ்", flag: "🇮🇳" },
     { code: "te", name: "తెలుగు", flag: "🇮🇳" },
+    { code: "ml", name: "മലയാളം", flag: "🇮🇳" },
     { code: "mr", name: "मराठी", flag: "🇮🇳" },
   ]
 
@@ -122,6 +132,7 @@ export default function AIConstructionChatbot() {
     if (/[\u0C80-\u0CFF]/.test(text)) return "kn" // Kannada
     if (/[\u0B80-\u0BFF]/.test(text)) return "ta" // Tamil
     if (/[\u0C00-\u0C7F]/.test(text)) return "te" // Telugu
+    if (/[\u0D00-\u0D7F]/.test(text)) return "ml" // Malayalam
     return "en" // Default to English
   }
 
@@ -209,7 +220,7 @@ export default function AIConstructionChatbot() {
       setMessages((prev) => [...prev, aiMessage])
       // speak AI reply in selected language (supports pause/resume)
       try {
-        toggleSpeak(aiMessage.content)
+        toggleSpeak(aiMessage.content, aiMessage.language)
       } catch (e) {
         console.warn("TTS failed", e)
       }
@@ -229,7 +240,7 @@ export default function AIConstructionChatbot() {
       setMessages((prev) => [...prev, aiMessage])
       // speak offline fallback response (supports pause/resume)
       try {
-        toggleSpeak(aiMessage.content)
+        toggleSpeak(aiMessage.content, aiMessage.language)
       } catch (e) {
         console.warn("TTS failed", e)
       }
@@ -265,6 +276,7 @@ export default function AIConstructionChatbot() {
       kn: "kn-IN",
       ta: "ta-IN",
       te: "te-IN",
+      ml: "ml-IN",
       mr: "mr-IN",
       auto: "en-IN",
     }
@@ -277,22 +289,14 @@ export default function AIConstructionChatbot() {
       const transcript = event.results[0][0].transcript
       setInputMessage((prev) => (prev ? prev + " " + transcript : transcript))
     }
-    recognition.onerror = (e) => {
+    recognition.onerror = (e: Event) => {
       console.error("Speech recognition error", e)
     }
     recognition.onend = () => setIsListening(false)
     recognition.start()
   }
 
-  const speakMessage = (text: string) => {
-    if (!window.speechSynthesis) return
-
-    setIsSpeaking(true)
-    setIsPaused(false)
-    const utter = new SpeechSynthesisUtterance(text)
-    utterRef.current = utter
-
-    // prefer a voice that matches the selected language
+  const getLocaleForLang = (lang: string): string => {
     const langToLocale: Record<string, string> = {
       auto: "en-IN",
       en: "en-US",
@@ -300,32 +304,60 @@ export default function AIConstructionChatbot() {
       kn: "kn-IN",
       ta: "ta-IN",
       te: "te-IN",
+      ml: "ml-IN",
       mr: "mr-IN",
     }
-    const desired = langToLocale[selectedLanguage] || langToLocale.auto
-
-    const setVoice = () => {
-      const voices = window.speechSynthesis.getVoices()
-      let v = voices.find((v) => v.lang === desired)
-      if (!v) v = voices.find((v) => v.lang && v.lang.startsWith(desired.split("-")[0]))
-      if (v) utter.voice = v
-      utter.lang = desired
-      utter.onend = () => {
-        setIsSpeaking(false)
-        setIsPaused(false)
-        utterRef.current = null
-      }
-      window.speechSynthesis.speak(utter)
-    }
-
-    if (window.speechSynthesis.getVoices().length === 0) {
-      window.speechSynthesis.onvoiceschanged = () => setVoice()
-    } else {
-      setVoice()
-    }
+    return langToLocale[lang] || langToLocale.en
   }
 
-  const toggleSpeak = (text: string) => {
+  const speakMessage = (text: string, lang?: string) => {
+    if (!window.speechSynthesis) return
+
+    window.speechSynthesis.cancel()
+    setIsSpeaking(true)
+    setIsPaused(false)
+
+    const utter = new SpeechSynthesisUtterance(text)
+    utterRef.current = utter
+
+    const desired = getLocaleForLang(lang || selectedLanguage)
+    // Always set the language on the utterance
+    utter.lang = desired
+
+    // Only assign voice if we find a real match for the language
+    const voices = window.speechSynthesis.getVoices()
+    // Log available voices for debugging
+    const availableLangs = voices.map(v => v.lang + " " + v.name).join(", ")
+    console.log("Available TTS voices:", availableLangs)
+    
+    // Find a voice that supports this exact locale or language prefix
+    const matchingVoice = voices.find((voice) => voice.lang === desired) || 
+                          voices.find((voice) => voice.lang.startsWith(desired.split("-")[0]))
+    
+    // Only assign a matching voice - never use a non-matching voice
+    if (matchingVoice) {
+      utter.voice = matchingVoice
+    }
+    // If no matching voice, don't assign any voice - browser will use system default
+    // which will try to use the lang we set
+
+    utter.onend = () => {
+      setIsSpeaking(false)
+      setIsPaused(false)
+      utterRef.current = null
+    }
+    utter.onerror = (e) => {
+      console.warn("TTS error:", e)
+      setIsSpeaking(false)
+      setIsPaused(false)
+      utterRef.current = null
+    }
+
+    // Use a small timeout to ensure voices are loaded in some browsers
+    window.speechSynthesis.speak(utter)
+  }
+
+  const toggleSpeak = (text: string, lang?: string) => {
     if (!window.speechSynthesis) return
 
     // If currently speaking and not paused => pause
@@ -344,7 +376,7 @@ export default function AIConstructionChatbot() {
 
     // Not speaking => start new utterance (cancel any existing)
     window.speechSynthesis.cancel()
-    speakMessage(text)
+    speakMessage(text, lang)
   }
 
   // Recording handlers
@@ -389,6 +421,13 @@ export default function AIConstructionChatbot() {
     a.click()
     a.remove()
   }
+
+  useEffect(() => {
+    if (isOpen && messages.length === 1 && messages[0].id === "1") {
+      // Auto-speak the welcome message when chatbot opens
+      setTimeout(() => speakMessage(messages[0].content, messages[0].language), 500)
+    }
+  }, [isOpen])
 
   if (!isOpen) {
     return (
@@ -441,7 +480,31 @@ export default function AIConstructionChatbot() {
           <CardContent className="p-0 flex flex-col h-[calc(100%-80px)]">
             {/* Language Selector */}
             <div className="px-4 pb-3 border-b">
-              <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+              <Select
+                value={selectedLanguage}
+                onValueChange={(value) => {
+                  setSelectedLanguage(value)
+                  // Update welcome message to match selected language
+                  if (value !== "auto" && messages.length > 0 && messages[0].id === "1") {
+                    const lang = value as keyof typeof welcomeMessages
+                    const updatedMessages = [...messages]
+                    updatedMessages[0] = {
+                      ...updatedMessages[0],
+                      content: welcomeMessages[lang] || welcomeMessages.en,
+                      language: lang,
+                    }
+                    setMessages(updatedMessages)
+                  } else if (value === "auto") {
+                    const updatedMessages = [...messages]
+                    updatedMessages[0] = {
+                      ...updatedMessages[0],
+                      content: welcomeMessages.en,
+                      language: "en",
+                    }
+                    setMessages(updatedMessages)
+                  }
+                }}
+              >
                 <SelectTrigger className="h-8 text-xs">
                   <div className="flex items-center gap-2">
                     <Languages className="h-3 w-3" />
@@ -508,7 +571,7 @@ export default function AIConstructionChatbot() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-4 w-4 p-0 opacity-70 hover:opacity-100"
-                                onClick={() => toggleSpeak(message.content)}
+                                onClick={() => toggleSpeak(message.content, message.language)}
                               >
                                 {isSpeaking && !isPaused ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
                               </Button>

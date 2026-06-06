@@ -154,20 +154,31 @@ export default function EasyConstructLanding() {
         <div className="absolute inset-0 bg-[url('/modern-construction-site-with-cranes-and-blueprint.jpg')] bg-cover bg-center opacity-20 dark:opacity-10" />
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/30 via-transparent to-cyan-600/30 dark:from-blue-800/40 dark:to-cyan-800/40" />
 
-        {/* Floating particles animation */}
+        {/* Floating particles animation - deterministic values to avoid hydration mismatch */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-2 h-2 bg-white/20 dark:bg-white/10 rounded-full animate-pulse"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
-                animationDuration: `${3 + Math.random() * 2}s`,
-              }}
-            />
-          ))}
+          {[...Array(20)].map((_, i) => {
+            // Seeded pseudo-random using a simple deterministic hash
+            const seed = (i * 7919 + 1) % 9973;
+            const seed2 = (i * 6271 + 3) % 9973;
+            const seed3 = (i * 3823 + 7) % 9973;
+            const seed4 = (i * 2671 + 11) % 9973;
+            const left = ((seed * 1.618) % 1) * 100;
+            const top = ((seed2 * 1.414) % 1) * 100;
+            const delay = ((seed3 * 1.732) % 1) * 3;
+            const duration = 3 + ((seed4 * 1.236) % 1) * 2;
+            return (
+              <div
+                key={i}
+                className="absolute w-2 h-2 bg-white/20 dark:bg-white/10 rounded-full animate-pulse"
+                style={{
+                  left: `${left}%`,
+                  top: `${top}%`,
+                  animationDelay: `${delay}s`,
+                  animationDuration: `${duration}s`,
+                }}
+              />
+            );
+          })}
         </div>
 
         <div className="relative z-10 container mx-auto px-4 py-8">
@@ -1749,6 +1760,7 @@ function BudgetInputScreen() {
                       <input
                         type="checkbox"
                         id="kitchen"
+                        title="Modular Kitchen"
                         checked={hasKitchen}
                         onChange={(e) => setHasKitchen(e.target.checked)}
                         className="rounded border-border"
@@ -1759,6 +1771,7 @@ function BudgetInputScreen() {
                       <input
                         type="checkbox"
                         id="balcony"
+                        title="Balcony"
                         checked={hasBalcony}
                         onChange={(e) => setHasBalcony(e.target.checked)}
                         className="rounded border-border"
@@ -1769,6 +1782,7 @@ function BudgetInputScreen() {
                       <input
                         type="checkbox"
                         id="garden"
+                        title="Garden/Terrace"
                         checked={hasGarden}
                         onChange={(e) => setHasGarden(e.target.checked)}
                         className="rounded border-border"
