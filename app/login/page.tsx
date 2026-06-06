@@ -49,7 +49,7 @@ export default function LoginPage() {
         router.push('/dashboard')
       }
     } catch (err) {
-      if (err?.name === 'AbortError') setError('Request timed out. Check your network and try again.')
+      if ((err as { name?: unknown } | null)?.name === 'AbortError') setError('Request timed out. Check your network and try again.')
       else setError('Network error. Please check your connection and retry.')
     } finally {
       setLoading(false)
