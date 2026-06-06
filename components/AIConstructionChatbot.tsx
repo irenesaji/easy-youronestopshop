@@ -51,6 +51,12 @@ export default function AIConstructionChatbot() {
   const [selectedLanguage, setSelectedLanguage] = useState("auto")
   const [isListening, setIsListening] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
+  const [isPaused, setIsPaused] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const utterRef = useRef<SpeechSynthesisUtterance | null>(null)
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
+  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([])
+  const [recordingUrl, setRecordingUrl] = useState<string | null>(null)
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -201,6 +207,12 @@ export default function AIConstructionChatbot() {
       }
 
       setMessages((prev) => [...prev, aiMessage])
+      // speak AI reply in selected language (supports pause/resume)
+      try {
+        toggleSpeak(aiMessage.content)
+      } catch (e) {
+        console.warn("TTS failed", e)
+      }
     } catch (error) {
       console.error("Error communicating with AI backend:", error)
       
@@ -209,12 +221,18 @@ export default function AIConstructionChatbot() {
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "ai",
-        content: fallbackResponse + "\n\n⚠️ Note: Using offline mode. For better AI responses, ensure the backend server is running.",
+        content: fallbackResponse,
         timestamp: new Date(),
         language: userLanguage,
       }
       
       setMessages((prev) => [...prev, aiMessage])
+      // speak offline fallback response (supports pause/resume)
+      try {
+        toggleSpeak(aiMessage.content)
+      } catch (e) {
+        console.warn("TTS failed", e)
+      }
     } finally {
       setIsTyping(false)
     }
@@ -226,20 +244,150 @@ export default function AIConstructionChatbot() {
   }
 
   const startListening = () => {
-    setIsListening(true)
-    // Simulate voice recognition
-    setTimeout(() => {
-      setIsListening(false)
-      setInputMessage("What's the cost estimate for my house construction?")
-    }, 2000)
+    // Use Web Speech API for real recognition when available
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      // Fallback simulated behavior
+      setIsListening(true)
+      setTimeout(() => {
+        setIsListening(false)
+        setInputMessage("What's the cost estimate for my house construction?")
+      }, 2000)
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+    const langCode = selectedLanguage === "auto" ? "en-IN" : selectedLanguage
+    // map short codes to BCP-47 locales for speech recognition
+    const localeMap: Record<string, string> = {
+      en: "en-US",
+      hi: "hi-IN",
+      kn: "kn-IN",
+      ta: "ta-IN",
+      te: "te-IN",
+      mr: "mr-IN",
+      auto: "en-IN",
+    }
+    recognition.lang = localeMap[langCode as keyof typeof localeMap] || String(langCode)
+    recognition.interimResults = false
+    recognition.maxAlternatives = 1
+
+    recognition.onstart = () => setIsListening(true)
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript
+      setInputMessage((prev) => (prev ? prev + " " + transcript : transcript))
+    }
+    recognition.onerror = (e) => {
+      console.error("Speech recognition error", e)
+    }
+    recognition.onend = () => setIsListening(false)
+    recognition.start()
   }
 
   const speakMessage = (text: string) => {
+    if (!window.speechSynthesis) return
+
     setIsSpeaking(true)
-    // Simulate text-to-speech
-    setTimeout(() => {
-      setIsSpeaking(false)
-    }, 3000)
+    setIsPaused(false)
+    const utter = new SpeechSynthesisUtterance(text)
+    utterRef.current = utter
+
+    // prefer a voice that matches the selected language
+    const langToLocale: Record<string, string> = {
+      auto: "en-IN",
+      en: "en-US",
+      hi: "hi-IN",
+      kn: "kn-IN",
+      ta: "ta-IN",
+      te: "te-IN",
+      mr: "mr-IN",
+    }
+    const desired = langToLocale[selectedLanguage] || langToLocale.auto
+
+    const setVoice = () => {
+      const voices = window.speechSynthesis.getVoices()
+      let v = voices.find((v) => v.lang === desired)
+      if (!v) v = voices.find((v) => v.lang && v.lang.startsWith(desired.split("-")[0]))
+      if (v) utter.voice = v
+      utter.lang = desired
+      utter.onend = () => {
+        setIsSpeaking(false)
+        setIsPaused(false)
+        utterRef.current = null
+      }
+      window.speechSynthesis.speak(utter)
+    }
+
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.onvoiceschanged = () => setVoice()
+    } else {
+      setVoice()
+    }
+  }
+
+  const toggleSpeak = (text: string) => {
+    if (!window.speechSynthesis) return
+
+    // If currently speaking and not paused => pause
+    if (isSpeaking && !isPaused) {
+      window.speechSynthesis.pause()
+      setIsPaused(true)
+      return
+    }
+
+    // If paused => resume
+    if (isSpeaking && isPaused) {
+      window.speechSynthesis.resume()
+      setIsPaused(false)
+      return
+    }
+
+    // Not speaking => start new utterance (cancel any existing)
+    window.speechSynthesis.cancel()
+    speakMessage(text)
+  }
+
+  // Recording handlers
+  const startRecording = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      console.error("MediaDevices API not available")
+      return
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mr = new MediaRecorder(stream)
+      setMediaRecorder(mr)
+      setRecordedChunks([])
+      mr.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) setRecordedChunks((prev) => [...prev, e.data])
+      }
+      mr.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: "audio/webm" })
+        const url = URL.createObjectURL(blob)
+        setRecordingUrl(url)
+      }
+      mr.start()
+      setIsRecording(true)
+    } catch (err) {
+      console.error("Error starting recording", err)
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      mediaRecorder.stop()
+      setIsRecording(false)
+    }
+  }
+
+  const downloadRecording = () => {
+    if (!recordingUrl) return
+    const a = document.createElement("a")
+    a.href = recordingUrl
+    a.download = `chat-recording-${Date.now()}.webm`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
   }
 
   if (!isOpen) {
@@ -360,9 +508,9 @@ export default function AIConstructionChatbot() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-4 w-4 p-0 opacity-70 hover:opacity-100"
-                                onClick={() => speakMessage(message.content)}
+                                onClick={() => toggleSpeak(message.content)}
                               >
-                                {isSpeaking ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3" />}
+                                {isSpeaking && !isPaused ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
                               </Button>
                             )}
                           </div>
@@ -409,6 +557,23 @@ export default function AIConstructionChatbot() {
                   >
                     {isListening ? <MicOff className="h-3 w-3 text-red-500" /> : <Mic className="h-3 w-3" />}
                   </Button>
+                  {/* Recording controls */}
+                  <div className="absolute left-2 top-1 flex items-center gap-2">
+                    {!isRecording ? (
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500" onClick={startRecording}>
+                        <span className="block h-2 w-2 bg-red-500 rounded-full" />
+                      </Button>
+                    ) : (
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500" onClick={stopRecording}>
+                        <span className="text-xs">■</span>
+                      </Button>
+                    )}
+                    {recordingUrl && (
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={downloadRecording}>
+                        ⬇️
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <Button onClick={handleSendMessage} size="sm" disabled={!inputMessage.trim()}>
                   <Send className="h-3 w-3" />

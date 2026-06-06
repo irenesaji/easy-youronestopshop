@@ -156,15 +156,7 @@ export default function DashboardPage() {
                     <hr className="my-1 border-border" />
                     <button
                       onClick={() => {
-                        // Open the external AR/VR house designer located in the repository
-                        // Use an absolute file URL to the local copy. This opens in a new tab/window.
-                        // If you'd prefer the AR app to be served from `public/` instead,
-                        // we can move the `AR-vr/AR_VR` folder into `public/AR-vr/AR_VR` and
-                        // navigate to `/AR-vr/AR_VR/index.html` instead.
-                        // Navigate to the AR app served from the Next `public` folder.
-                        // The AR files are available at `/AR_VR/index.html`.
-                        window.location.href = "/AR_VR/index.html"
-
+                        window.open("/AR_VR/index.html", "_blank", "noopener,noreferrer")
                         setShowDesignerMenu(false)
                       }}
                       className="w-full text-left px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground rounded transition-colors"
@@ -248,9 +240,8 @@ export default function DashboardPage() {
                   className="h-20 flex-col gap-2 bg-transparent"
                   variant="outline"
                     onClick={() => {
-                    // Navigate to the AR app served from the Next `public` folder.
-                    // The AR files are available at `/AR_VR/index.html`.
-                    window.location.href = "/AR_VR/index.html"
+                    // Open the AR app served from the Next `public` folder in a new tab
+                    window.open("/AR_VR/index.html", "_blank", "noopener,noreferrer")
                   }}
                 >
                   <Palette className="h-6 w-6" />
