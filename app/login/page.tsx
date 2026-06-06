@@ -19,24 +19,46 @@ export default function LoginPage() {
     if (e) e.preventDefault()
     setLoading(true)
     setError("")
+    // Basic client-side validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Please enter a valid email address.")
+      setLoading(false)
+      return
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.")
+      setLoading(false)
+      return
+    }
     try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 8000)
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
+        signal: controller.signal,
       })
+      clearTimeout(timeout)
+
       if (!res.ok) {
-        const data = await res.json()
-        setError(data?.error || 'Login failed')
+        const data = await res.json().catch(() => ({}))
+        setError(data?.error || 'Login failed. Please check your credentials and try again.')
       } else {
         // cookie set by server; redirect to dashboard immediately
         router.push('/dashboard')
       }
     } catch (err) {
-      setError('Network error')
+      if (err?.name === 'AbortError') setError('Request timed out. Check your network and try again.')
+      else setError('Network error. Please check your connection and retry.')
     } finally {
       setLoading(false)
     }
+  }
+
+  const retry = () => {
+    // re-run submit using current state
+    handleSubmit()
   }
 
   return (
@@ -59,6 +81,14 @@ export default function LoginPage() {
             </div>
 
             {error && <div className="text-sm text-red-600">{error}</div>}
+
+            {error && (error.includes('Network') || error.includes('timed out')) && (
+              <div className="mt-2">
+                <Button variant="outline" size="sm" onClick={retry}>
+                  Retry
+                </Button>
+              </div>
+            )}
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Signing in...' : (

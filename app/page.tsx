@@ -66,21 +66,38 @@ export default function EasyConstructLanding() {
   async function handleLogin() {
     setLoading(true)
     setError("")
+    // Basic client-side validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Please enter a valid email address.")
+      setLoading(false)
+      return
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.")
+      setLoading(false)
+      return
+    }
     try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 8000)
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        signal: controller.signal,
       })
+      clearTimeout(timeout)
+
       if (!res.ok) {
-        const data = await res.json()
-        setError(data?.error || "Login failed")
+        const data = await res.json().catch(() => ({}))
+        setError(data?.error || "Login failed. Please check your credentials and try again.")
       } else {
-        // Redirect to dashboard instead of showing form (do not await body)
+        // Redirect to dashboard instead of showing form
         router.push("/dashboard")
       }
     } catch (e) {
-      setError("Network error")
+      if ((e as any)?.name === 'AbortError') setError('Request timed out. Check your network and try again.')
+      else setError("Network error. Please check your connection and retry.")
     } finally {
       setLoading(false)
     }
@@ -89,21 +106,38 @@ export default function EasyConstructLanding() {
   async function handleSignup() {
     setLoading(true)
     setError("")
+    // Basic client-side validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Please enter a valid email address.")
+      setLoading(false)
+      return
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.")
+      setLoading(false)
+      return
+    }
     try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 8000)
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password }),
+        signal: controller.signal,
       })
+      clearTimeout(timeout)
+
       if (!res.ok) {
-        const data = await res.json()
-        setError(data?.error || "Signup failed")
+        const data = await res.json().catch(() => ({}))
+        setError(data?.error || "Signup failed. Please try again.")
       } else {
-        // Redirect to dashboard instead of showing form (do not await body)
+        // Redirect to dashboard instead of showing form
         router.push("/dashboard")
       }
     } catch (e) {
-      setError("Network error")
+      if ((e as any)?.name === 'AbortError') setError('Request timed out. Check your network and try again.')
+      else setError("Network error. Please check your connection and retry.")
     } finally {
       setLoading(false)
     }
