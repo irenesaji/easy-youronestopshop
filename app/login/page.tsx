@@ -25,11 +25,11 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       })
-      const data = await res.json()
       if (!res.ok) {
+        const data = await res.json()
         setError(data?.error || 'Login failed')
       } else {
-        // cookie set by server; redirect to dashboard
+        // cookie set by server; redirect to dashboard immediately
         router.push('/dashboard')
       }
     } catch (err) {

@@ -72,11 +72,11 @@ export default function EasyConstructLanding() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       })
-      const data = await res.json()
       if (!res.ok) {
+        const data = await res.json()
         setError(data?.error || "Login failed")
       } else {
-        // Redirect to dashboard instead of showing form
+        // Redirect to dashboard instead of showing form (do not await body)
         router.push("/dashboard")
       }
     } catch (e) {
@@ -95,11 +95,11 @@ export default function EasyConstructLanding() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password }),
       })
-      const data = await res.json()
       if (!res.ok) {
+        const data = await res.json()
         setError(data?.error || "Signup failed")
       } else {
-        // Redirect to dashboard instead of showing form
+        // Redirect to dashboard instead of showing form (do not await body)
         router.push("/dashboard")
       }
     } catch (e) {
