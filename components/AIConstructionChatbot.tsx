@@ -277,7 +277,7 @@ export default function AIConstructionChatbot() {
       const transcript = event.results[0][0].transcript
       setInputMessage((prev) => (prev ? prev + " " + transcript : transcript))
     }
-    recognition.onerror = (e) => {
+    recognition.onerror = (e: any) => {
       console.error("Speech recognition error", e)
     }
     recognition.onend = () => setIsListening(false)

@@ -39,7 +39,7 @@ export function addItem(item: Omit<CartItem, "quantity">, amount = 1) {
   if (existing) {
     existing.quantity = (existing.quantity || 0) + amount
   } else {
-    items.push({ ...item, quantity: amount })
+    items.push({ ...item, quantity: amount } as CartItem)
   }
   writeItems(items)
   return items
