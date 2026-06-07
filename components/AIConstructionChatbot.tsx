@@ -170,62 +170,19 @@ export default function AIConstructionChatbot() {
     setIsPaused(false)
   }
 
-  const langNameMap: Record<string, string> = {
-    en: "English", hi: "Hindi", kn: "Kannada", ml: "Malayalam", ta: "Tamil", te: "Telugu",
-  }
-
-  const askGroq = async (userText: string, lang: string): Promise<string> => {
-    const langName = langNameMap[lang] ?? "English"
-    const systemPrompt = `You are an expert AI Construction Assistant specializing in Indian construction industry.
-
-You provide accurate, detailed answers about:
-- Construction costs and budget estimation (region-wise rates in India)
-- Building materials (cement, steel, bricks, sand, aggregate, tiles, etc.) with current Indian market prices
-- Workforce and contractors (daily wages, hiring tips, contractor rates in India)
-- Vastu Shastra compliance for homes and buildings
-- Eco-friendly and sustainable construction practices
-- Building permits, approvals, and legal requirements in India
-- Structural engineering basics (foundation, RCC, load-bearing walls)
-- Interior finishing, plumbing, electrical work estimates
-
-RULES:
-1. You MUST respond ONLY in ${langName} language. Every single word must be in ${langName}. Do NOT mix languages.
-2. Give specific, accurate, practical answers with numbers and facts.
-3. Use ₹ for all prices. Reference Indian cities/regions when relevant.
-4. Keep responses clear and concise (under 200 words).
-5. If the question is not related to construction, politely say so in ${langName}.`
-
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.NEXT_PUBLIC_GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userText },
-        ],
-        max_tokens: 512,
-        temperature: 0.4,
-      }),
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err?.error?.message ?? "Groq API error")
-    }
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content?.trim() ?? ""
-  }
-
   const sendAIReply = async (userText: string, lang: string) => {
     let responseText: string
     try {
-      responseText = await askGroq(userText, lang)
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userText, lang }),
+      })
+      if (!res.ok) throw new Error("API error")
+      const data = await res.json()
+      responseText = data.reply
       if (!responseText) throw new Error("empty")
     } catch {
-      // fallback to hardcoded localized responses
       const key = detectKey(userText)
       responseText = getLangResponse(key, lang)
     }
