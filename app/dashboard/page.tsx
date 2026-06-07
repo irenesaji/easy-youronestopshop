@@ -161,7 +161,7 @@ export default function DashboardPage() {
                       }}
                       className="w-full text-left px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground rounded transition-colors"
                     >
-                      Option 1: House Designer
+                      Option 1: House Designer (AR/VR)
                     </button>
                     <button
                       onClick={() => {
