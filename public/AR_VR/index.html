@@ -103,17 +103,43 @@
       margin: 0 12px 12px 12px;
     }
 
-    #viewer {
-      flex: 1;
-      min-height: 60vh;
-      background: var(--viewer-dark);
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 12px 40px rgba(7,18,40,0.45);
-      border: 1px solid rgba(255,255,255,0.04);
-      display: flex;
-      align-items: stretch;
-    }
+  #viewer {
+  position: relative;
+  flex: 1;
+  min-height: 60vh;
+  background: var(--viewer-dark);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(7,18,40,0.45);
+  border: 1px solid rgba(255,255,255,0.04);
+  display: flex;
+  align-items: stretch;
+}
+
+.ar-btn{
+  position:absolute;
+  bottom:20px;
+  right:20px;
+  width:56px;
+  height:56px;
+  border-radius:50%;
+  background:#1f7bff;
+  color:white;
+  border:none;
+  font-size:24px;
+  cursor:pointer;
+  z-index:100;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 8px 25px rgba(0,0,0,.25);
+}
+
+.ar-btn:hover{
+  transform:scale(1.08);
+}
+
+
 
     .gallery {
       display: flex;
@@ -121,7 +147,7 @@
       gap: 12px;
       margin-top: 8px;
   /* make gallery clearly bluish */
-  background: linear-gradient(180deg, rgba(215,238,255,0.22), rgba(200,230,255,0.12));
+      background: linear-gradient(180deg, rgba(215,238,255,0.22), rgba(200,230,255,0.12));
       padding: 12px;
       border-radius: 12px;
       border: 1px solid rgba(10,25,40,0.02);
@@ -234,21 +260,30 @@
 
   <main>
     <div id="status" style="font-size:13px;color:#08304a;background:rgba(255,255,255,0.6);padding:8px 12px;border-radius:10px;border:1px solid rgba(11,20,30,0.08);">
-      Select an item to load its exact 3D model.
-    </div>
+  New here? Select a furniture item below to view it in 3D. Tap the camera icon to place it in your room using AR.
+</div>
     <div id="viewer">
-      <model-viewer id="mv"
-        src=""
-        alt="Furniture"
-        camera-controls
-        auto-rotate
-        ar
-        ar-modes="webxr scene-viewer quick-look"
-        ar-placement="floor"
-        shadow-intensity="1"
-        style="width:100%; height:100%;">
-      </model-viewer>
-    </div>
+  <model-viewer id="mv"
+  src=""
+  alt="Furniture"
+  camera-controls
+  auto-rotate
+  ar
+  ar-modes="webxr scene-viewer quick-look"
+  ar-placement="floor"
+  shadow-intensity="1"
+  style="width:100%; height:100%;">
+
+  <button slot="ar-button" class="ar-btn">
+    📷
+  </button>
+
+</model-viewer>
+</div>
+
+
+
+
 
     <!-- FURNITURE GALLERY -->
     <aside id="furnitureGallery" class="gallery">
@@ -346,102 +381,92 @@
     <!-- Houses gallery removed — site now focuses on Furniture only -->
   </main>
 
-  <model-viewer id="hiddenAR"
-    ar
-    ar-modes="webxr scene-viewer quick-look"
-    ar-placement="floor"
-    shadow-intensity="1">
-  </model-viewer>
+ 
 
   <script>
-    const mv = document.getElementById('mv');
-    const hiddenAR = document.getElementById('hiddenAR');
-    const btnFurniture = document.getElementById('btnFurniture');
-    const furnitureGallery = document.getElementById('furnitureGallery');
-    const status = document.getElementById('status');
+const mv = document.getElementById('mv');
+const btnFurniture = document.getElementById('btnFurniture');
+const furnitureGallery = document.getElementById('furnitureGallery');
+const status = document.getElementById('status');
 
-    function setStatus(message, isError = false) {
-      status.textContent = message;
-      status.style.color = isError ? '#7a1328' : '#08304a';
-      status.style.borderColor = isError ? 'rgba(122,19,40,0.35)' : 'rgba(11,20,30,0.08)';
-      status.style.background = isError ? 'rgba(255,236,240,0.9)' : 'rgba(255,255,255,0.6)';
+
+let currentModel = '';
+
+function setStatus(message, isError = false) {
+  status.textContent = message;
+  status.style.color = isError ? '#7a1328' : '#08304a';
+  status.style.borderColor = isError
+    ? 'rgba(122,19,40,0.35)'
+    : 'rgba(11,20,30,0.08)';
+  status.style.background = isError
+    ? 'rgba(255,236,240,0.9)'
+    : 'rgba(255,255,255,0.6)';
+}
+
+btnFurniture.addEventListener('click', () => {
+  btnFurniture.classList.add('active');
+  furnitureGallery.classList.remove('hidden');
+
+  mv.removeAttribute('src');
+
+  setStatus('Select an item to load its exact 3D model.');
+});
+
+async function modelExists(modelPath) {
+  try {
+    const response = await fetch(modelPath, { method: 'HEAD' });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function openAR(el) {
+  const model = el.dataset.model;
+
+  const exists = await modelExists(model);
+
+  if (!exists) {
+    setStatus(`3D model missing: ${model}`, true);
+    return;
+  }
+
+  currentModel = model;
+
+  mv.src = model;
+  mv.onload = () => {
+  if (!mv.canActivateAR) {
+    setStatus(
+      '3D model loaded, but AR is not supported on this device/browser.',
+      true
+    );
+  }
+};
+
+  setStatus(
+    '3D model loaded. Tap the camera icon to view it in your room.',
+    false
+  );
+}
+
+(async function markMissingModels() {
+  const cards = Array.from(
+    document.querySelectorAll('.thumb[data-model]')
+  );
+
+  for (const card of cards) {
+    const model = card.dataset.model;
+
+    const exists = await modelExists(model);
+
+    if (!exists) {
+      card.style.opacity = '0.55';
+      card.style.outline = '2px dashed rgba(122,19,40,0.45)';
+      card.title = `${model} is missing`;
     }
-
-    // Single mode: Furniture. Keep handler minimal and idempotent.
-    btnFurniture.addEventListener('click', () => {
-      btnFurniture.classList.add('active');
-      furnitureGallery.classList.remove('hidden');
-      mv.removeAttribute('src');
-      setStatus('Select an item to load its exact 3D model.');
-    });
-
-    async function modelExists(modelPath) {
-      try {
-        const response = await fetch(modelPath, { method: 'HEAD' });
-        return response.ok;
-      } catch {
-        return false;
-      }
-    }
-
-    // AR handling — robust support check and error handling
-    async function openAR(el) {
-      const model = el.dataset.model;
-      const exists = await modelExists(model);
-      if (!exists) {
-        setStatus(`3D model missing: ${model}. Add this .glb file to enable AR for this item.`, true);
-        return;
-      }
-
-      mv.src = model;
-      // set src via attribute (works reliably across browsers)
-      hiddenAR.setAttribute('src', model);
-      setStatus(`Loaded ${model}. Use touch controls to move/rotate.`, false);
-
-      try {
-        // If canActivateAR is a function (older/newer model-viewer versions), call it.
-        if (typeof hiddenAR.canActivateAR === 'function') {
-          const can = await hiddenAR.canActivateAR();
-          if (!can) {
-            console.log('AR not available - showing in viewer only.');
-            return;
-          }
-        } else if (hiddenAR.canActivateAR === false) {
-          // explicit false means not available
-          console.log('AR not available - showing in viewer only.');
-          return;
-        }
-
-        // Wait for the model to load before attempting to activate AR.
-        await new Promise((resolve) => hiddenAR.addEventListener('load', resolve, { once: true }));
-
-        if (typeof hiddenAR.activateAR === 'function') {
-          await hiddenAR.activateAR();
-        } else {
-          // activateAR not available on this build — gracefully inform user
-          console.log('activateAR not supported by this model-viewer build.');
-          setStatus('AR is not supported on this browser/device. 3D preview is still available here.', true);
-        }
-      } catch (err) {
-        console.error('AR activation failed:', err);
-        // Keep the message user-friendly and actionable
-        setStatus('Could not start AR. Ensure your mobile device supports AR and camera permission.', true);
-      }
-    }
-
-    (async function markMissingModels() {
-      const cards = Array.from(document.querySelectorAll('.thumb[data-model]'));
-      for (const card of cards) {
-        const model = card.dataset.model;
-        const exists = await modelExists(model);
-        if (!exists) {
-          card.style.opacity = '0.55';
-          card.style.outline = '2px dashed rgba(122,19,40,0.45)';
-          card.title = `${model} is missing`;
-        }
-      }
-    })();
-  </script>
+  }
+})();
+</script>
 
   <!-- Error overlay: shows JS runtime errors on the page for easier debugging -->
   <style>
@@ -486,3 +511,4 @@
   </script>
 </body>
 </html>
+    
