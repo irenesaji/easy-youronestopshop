@@ -1,0 +1,14 @@
+{
+  "name": "ar-vr",
+  "version": "1.0.0",
+  "description": "Static AR/VR demo — serves index.html and assets",
+  "scripts": {
+    "dev": "http-server . -c-1 -p 3000 -a 0.0.0.0",
+    "start": "http-server . -c-1 -p 3000 -a 0.0.0.0"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
